@@ -1,88 +1,91 @@
 #include <stdio.h>
-#include <termios.h>
 #include <time.h>
-#include <unistd.h>
 #include <stdlib.h>
 
-#define ANSI_CURSOR_UP "\e[1A"
-#define ANSI_CURSOR_DOWN "\e[1B"
-#define ANSI_CURSOR_LEFT "\e[1D"
-#define ANSI_CURSOR_RIGHT "\e[1C"
-#define ANSI_SAVE_CURSOR "\e[s"
-#define ANSI_RESTORE_CURSOR "\e[u"
-#define ANSI_CLEAR_CURSOR_TO_END "\e[0K"
+#include "term.h"
 
-void print_rel(int rel_x, int rel_y, const char *string) {
-  printf(ANSI_SAVE_CURSOR);
-  
-  for (int i = 0; i < rel_x; i++) {
-    printf(ANSI_CURSOR_RIGHT);
-  }
-
-  for (int i = 0; i < rel_y; i++) {
-    printf(ANSI_CURSOR_DOWN);
-  }
-
-  printf("%s" ANSI_RESTORE_CURSOR, string);
-}
-
-void clear() {
-  printf(ANSI_CLEAR_CURSOR_TO_END);
+void paint_pixel(int off_x, int off_y, int x, int y, termcolor_t color) {
+  term_goto(off_x + 2 * x, off_y + y);
+  term_putc(' ', TERMCOLOR_WHITE, color);
+  term_goto(off_x + 2 * x + 1, off_y + y);
+  term_putc(' ', TERMCOLOR_WHITE, color);
 }
 
 int main (int argc, char **argv) {
-  int width = 20;
-  int height = 15;
+  int field_w = 40;
+  int field_h = 30;
+
+  int margin_l = 0;
+  int margin_r = 0;
+  int margin_t = 0;
+  int margin_b = 0;
 
   struct timespec sleeptime = {
       0,      /* seconds */
-      100000  /* nanoseconds */
+      100000000  /* nanoseconds */
     };
-
-  // switch stdin to non canonical mode
-  struct termios backup, noncanon;
-  tcgetattr(STDIN_FILENO, &backup);
-  tcgetattr(STDIN_FILENO, &noncanon);
-
-  noncanon.c_lflag &= ~(ICANON|ECHO);
-  noncanon.c_cc[VMIN] = 0;
-  noncanon.c_cc[VTIME] = 0;
-  
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &noncanon);
 
   int running = 1;
 
-  for (int i = 0; i < (height - 1); i++) {
-    printf("\n");
+  term_init(
+      margin_l + 2 * field_w + margin_r, 
+      margin_t + field_h + margin_b
+    );
+
+  int head_x = 0, head_y = 0;
+  int vel_x = 1, vel_y = 0;
+  int treat_x = 0, treat_y = 0;
+
+  // before the game even starts, make sure the treat is not under the snakes head
+  while (head_x == treat_x && head_y == treat_y) {
+    treat_x = rand() % field_w;
+    treat_y = rand() % field_h;
   }
 
-  setvbuf(stdout, NULL, _IONBF, 0);
-
-  for (int i = 0; i < (height - 1); i++) {
-    printf(ANSI_CURSOR_UP);
-  }
-
-  // TEEEEEST
-  print_rel(5, 10, "Hello World!");
+  paint_pixel(margin_l, margin_t, treat_x, treat_y, TERMCOLOR_RED);
 
   // game loop
   while (running) {
-    // check out all pressed keys
-    char c;
+    int old_vel_x = vel_x;
+    int old_vel_y = vel_y;
 
-    while ((c = fgetc(stdin)) != EOF) {      
-      if (c == 'q') {
+    // check out all pressed keys
+    termkey_t key;
+
+    while (term_getkey(&key)) {      
+      if (key == TERMKEY_Q) {
         running = 0;
-      } else {
-        fputc(c, stdout);
+      } else if (key == TERMKEY_ARROW_UP && old_vel_y != 1) {
+        vel_x = 0;
+        vel_y = -1;
+      } else if (key == TERMKEY_ARROW_DOWN && old_vel_y != -1) {
+        vel_x = 0;
+        vel_y = 1;
+      } else if (key == TERMKEY_ARROW_LEFT && old_vel_x != 1) {
+        vel_x = -1;
+        vel_y = 0;
+      } else if (key == TERMKEY_ARROW_RIGHT && old_vel_x != -1) {
+        vel_x = 1;
+        vel_y = 0;
       }
     }
+
+    head_x = (field_w + head_x + vel_x) % field_w;
+    head_y = (field_h + head_y + vel_y) % field_h;
+
+    if (head_x == treat_x && head_y == treat_y) {
+      treat_x = rand() % field_w;
+      treat_y = rand() % field_h;
+
+      paint_pixel(margin_l, margin_t, treat_x, treat_y, TERMCOLOR_RED);
+    }
+
+    paint_pixel(margin_l, margin_t, head_x, head_y, TERMCOLOR_GREEN);
 
     nanosleep(&sleeptime, NULL);
   }
 
-  // switch stdin back to canonical mode
-  tcsetattr(STDIN_FILENO, TCSANOW, &backup);
+  term_kill();
 
   return 0;
 }
