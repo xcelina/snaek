@@ -14,12 +14,16 @@ BIN_DIR ?= ./bin
 PROG ?= snaek
 
 
+# Debug/Release default configuration
+DEBUG ?= 1
+
+
 # Debug/Release configurations
 ifeq ($(DEBUG),1)
 OBJ_DIR := $(OBJ_DIR)/debug
 BIN_DIR := $(BIN_DIR)/debug
 
-CCFLAGS += -g -DDEBUG
+CCFLAGS += -O0 -g -DDEBUG
 else
 OBJ_DIR := $(OBJ_DIR)/release
 BIN_DIR := $(BIN_DIR)/release
