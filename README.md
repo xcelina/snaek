@@ -1,26 +1,25 @@
-# Snake #
-A small snake game for the terminal.
+# snaek #
+play snaek
 
-## Building ##
-For a debug build, use:
+## bild ##
+for debug buld
 ```Bash
 $ make
 ```
 
-For a release build, use:
+for reelase build
 ```Bash
 $ make DEBUG=0
 ```
 
-If you're feeling fancy, you can specify custom directories for sources, 
-headers, object files, and/or binaries:
+you can chaeng hte folders too
 
 ```Bash
 $ make SRC_DIR=~/mysrc INC_DIR=~/myinc OBJ_DIR=~/myobj BIN_DIR=~/mybin
 ```
 
-## Cleaning up ##
-To clean up the default build, use:
+## cleen ##
+maek clean
 
 ```Bash
 $ make clean

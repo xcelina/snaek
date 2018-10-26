@@ -11,7 +11,7 @@ INC_DIR ?= ./include
 SRC_DIR ?= ./src
 OBJ_DIR ?= ./obj
 BIN_DIR ?= ./bin
-PROG ?= snake
+PROG ?= snaek
 
 
 # Debug/Release configurations
